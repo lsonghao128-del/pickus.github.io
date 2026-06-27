@@ -1,0 +1,13 @@
+Competitor ID,Competitor / Cluster Name,Latitude,Longitude,Competitor Type,Intensity,Risk,Audience,Relation,Google Maps Link,Observation Note
+CMP-001,Grand Indonesia Photobooth Cluster,-6.19555,106.82120,商场拍照机器,高,高,"情侣;年轻人;游客",直接竞品,"https://www.google.com/maps/search/?api=1&query=-6.19555,106.82120","大型商场内常见即时拍照/贴纸照消费场景，适合观察定价、排队和机器摆位。"
+CMP-002,Central Park / Neo Soho Photo Zone,-6.17785,106.79015,商场拍照机器,高,高,"学生;情侣;家庭",直接竞品,"https://www.google.com/maps/search/?api=1&query=-6.17785,106.79015","年轻客群密集，若已有同类机器，需要差异化主题、打印质量和联名活动。"
+CMP-003,PIK Chinatown Photo Booth Area,-6.10335,106.74055,户外拍照服务,中,中,"游客;情侣;家庭",替代竞品,"https://www.google.com/maps/search/?api=1&query=-6.10335,106.74055","户外打卡点可能有摄影/手机打印/临时拍照摊位，适合对比夜间客单与照片风格。"
+CMP-004,Kota Tua Instant Photo Vendors,-6.13455,106.81315,景区拍照服务,高,中,"游客;家庭;情侣",替代竞品,"https://www.google.com/maps/search/?api=1&query=-6.13455,106.81315","景区人工拍照和纪念照片服务集中，PICK US 可强调自主、快速、社交分享和可爱模板。"
+CMP-005,Blok M / M Bloc Self Photo Cluster,-6.24375,106.79875,自拍馆/拍照馆,中,中,"年轻人;学生;情侣",同类竞品,"https://www.google.com/maps/search/?api=1&query=-6.24375,106.79875","潮流街区适合观察 self photo studio、K-style photobooth、活动快闪机的客群反应。"
+CMP-006,Kemang Studio & Lifestyle Photo Area,-6.26120,106.81515,自拍馆/拍照馆,中,中,"年轻人;白领;外籍客群",同类竞品,"https://www.google.com/maps/search/?api=1&query=-6.26120,106.81515","生活方式街区内摄影棚、自拍馆、活动拍照装置可能竞争晚间和周末需求。"
+CMP-007,Sarinah / Thamrin Tourist Photo Services,-6.18770,106.82355,游客拍照服务,中,中,"游客;白领;情侣",替代竞品,"https://www.google.com/maps/search/?api=1&query=-6.18770,106.82355","游客与城市打卡需求明显，可观察纪念品店、相片打印和街头摄影服务。"
+CMP-008,Pantai Indah Kapuk Lifestyle Photo Spots,-6.09145,106.74105,户外拍照服务,中,低,"情侣;家庭;年轻人",生态参考,"https://www.google.com/maps/search/?api=1&query=-6.09145,106.74105","海边与餐饮外摆场景更像拍照生态点，适合寻找合作商户而非正面对抗。"
+CMP-009,Senayan Event Photo Booth Zone,-6.21910,106.80295,活动快闪拍照,高,高,"活动观众;运动人群;家庭",直接竞品,"https://www.google.com/maps/search/?api=1&query=-6.21910,106.80295","赛事、展会、演唱会期间品牌快闪 photobooth 竞争强，适合活动档期专项观察。"
+CMP-010,Sabang Food Street Mobile Photo Vendors,-6.18825,106.82615,移动拍照/打印,中,低,"白领;游客;年轻人",替代竞品,"https://www.google.com/maps/search/?api=1&query=-6.18825,106.82615","夜间小吃街可能出现移动拍照、即时打印或街头摄影，适合测试轻量机器点位。"
+CMP-011,Tebet Park Weekend Photo Services,-6.23795,106.85265,公园拍照服务,低,低,"家庭;情侣;社区居民",生态参考,"https://www.google.com/maps/search/?api=1&query=-6.23795,106.85265","周末亲子和情侣拍照明显，但商业化程度较低，需要关注许可和户外安全。"
+CMP-012,Glodok / Petak Enam Photo Spot Vendors,-6.14515,106.81335,街区拍照服务,中,中,"游客;美食客;年轻人",替代竞品,"https://www.google.com/maps/search/?api=1&query=-6.14515,106.81335","历史街区和美食打卡结合，适合与餐饮商户、纪念品商户合作避开正面竞争。"
