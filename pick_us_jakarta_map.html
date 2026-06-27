@@ -1,0 +1,2090 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PICK US Jakarta Site Finder</title>
+  <meta name="description" content="PICK US 拍照打印机雅加达前期选址地图，包含商场、学校、景区、咖啡餐饮商区等点位热力、人流、客群、摆放位置和投放评分。" />
+  <meta name="robots" content="index,follow" />
+  <meta property="og:title" content="PICK US Jakarta Site Finder" />
+  <meta property="og:description" content="雅加达 PICK US 拍照打印机点位标注地图和投放评分表。" />
+  <meta property="og:type" content="website" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    :root {
+      --ink: #172033;
+      --muted: #667085;
+      --line: #d9e1ea;
+      --panel: #ffffff;
+      --soft: #f4f7fb;
+      --dark: #111827;
+      --red: #e03131;
+      --amber: #f59f00;
+      --green: #2f9e44;
+      --blue: #2563eb;
+      --shadow: 0 12px 34px rgba(15, 23, 42, .12);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: #eef2f6;
+      font-family: Inter, Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+      letter-spacing: 0;
+    }
+
+    button, input, select {
+      font: inherit;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .app-shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    .topbar {
+      background: var(--dark);
+      color: #fff;
+      padding: 18px 24px 16px;
+      display: grid;
+      grid-template-columns: minmax(280px, 1fr) auto;
+      gap: 18px;
+      align-items: end;
+    }
+
+    .brand {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 25px;
+      line-height: 1.15;
+      font-weight: 800;
+    }
+
+    .brand p {
+      margin: 0;
+      color: #cbd5e1;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .btn {
+      border: 1px solid rgba(255, 255, 255, .22);
+      background: rgba(255, 255, 255, .08);
+      color: #fff;
+      height: 36px;
+      padding: 0 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+
+    .btn.primary {
+      background: #fff;
+      color: var(--dark);
+      border-color: #fff;
+      font-weight: 700;
+    }
+
+    .btn.add {
+      background: #22c55e;
+      border-color: #22c55e;
+      color: #082f1a;
+      font-weight: 800;
+    }
+
+    .main {
+      padding: 16px;
+      display: grid;
+      grid-template-columns: minmax(520px, 1.25fr) minmax(390px, .75fr);
+      gap: 16px;
+      min-height: 0;
+    }
+
+    .map-panel,
+    .side-panel,
+    .data-panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      box-shadow: 0 1px 0 rgba(15, 23, 42, .03);
+    }
+
+    .map-panel {
+      min-height: calc(100vh - 112px);
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    .toolbar {
+      padding: 12px;
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) auto auto;
+      gap: 10px;
+      border-bottom: 1px solid var(--line);
+      background: #fbfcfe;
+      align-items: center;
+    }
+
+    .searchbox {
+      height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 0 12px;
+      min-width: 0;
+      background: white;
+    }
+
+    .segmented,
+    .select-wrap {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .advanced-filters {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(130px, 1fr));
+      gap: 10px;
+      align-items: center;
+    }
+
+    .competitor-filters {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: minmax(180px, 260px) minmax(190px, 240px);
+      gap: 10px;
+      align-items: end;
+      padding-top: 10px;
+      border-top: 1px solid #e7edf3;
+    }
+
+    .layer-directory {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: minmax(180px, 260px) repeat(4, minmax(150px, 1fr));
+      gap: 10px;
+      align-items: center;
+      padding: 10px;
+      border: 1px solid #dbeafe;
+      border-radius: 6px;
+      background: #f8fbff;
+    }
+
+    .filter-section-label {
+      color: #6b21a8;
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 34px;
+      white-space: nowrap;
+    }
+
+    .filter-field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      min-width: 0;
+    }
+
+    .filter-field label {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .toggle {
+      height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 10px;
+      color: var(--ink);
+      cursor: pointer;
+      white-space: nowrap;
+      font-size: 13px;
+    }
+
+    .toggle input {
+      width: 15px;
+      height: 15px;
+      accent-color: var(--blue);
+    }
+
+    .chip {
+      height: 34px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      border-radius: 6px;
+      padding: 0 10px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .chip.active {
+      background: var(--dark);
+      color: #fff;
+      border-color: var(--dark);
+    }
+
+    select {
+      height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      padding: 0 10px;
+      color: var(--ink);
+    }
+
+    #map {
+      min-height: 620px;
+      height: calc(100vh - 177px);
+      background: #dfe7ef;
+    }
+
+    .right-stack {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 16px;
+      min-height: 0;
+    }
+
+    .side-panel {
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      min-height: 0;
+    }
+
+    .metrics {
+      padding: 14px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      background: var(--soft);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .metric {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 6px;
+      padding: 10px;
+      min-height: 74px;
+    }
+
+    .metric b {
+      display: block;
+      font-size: 24px;
+      line-height: 1.05;
+      margin-bottom: 5px;
+    }
+
+    .metric small {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.3;
+    }
+
+    .detail {
+      padding: 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .detail-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .detail h2 {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.25;
+    }
+
+    .detail .id {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 38px;
+      height: 30px;
+      padding: 0 10px;
+      color: white;
+      font-weight: 800;
+      border-radius: 5px;
+    }
+
+    .grade-A { background: var(--red); }
+    .grade-B { background: var(--amber); color: #1f2937; }
+    .grade-C { background: var(--green); }
+
+    .kv {
+      display: grid;
+      grid-template-columns: 104px 1fr;
+      gap: 8px 10px;
+      font-size: 13px;
+    }
+
+    .kv dt {
+      color: var(--muted);
+    }
+
+    .kv dd {
+      margin: 0;
+      min-width: 0;
+      line-height: 1.45;
+    }
+
+    .score-card {
+      margin-top: 14px;
+      padding: 12px;
+      border: 1px solid #dbe7ff;
+      background: #f7faff;
+      border-radius: 6px;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .micro-list {
+      margin-top: 14px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .micro-list h3 {
+      margin: 0;
+      padding: 9px 11px;
+      background: #fbfcfe;
+      border-bottom: 1px solid var(--line);
+      font-size: 13px;
+    }
+
+    .micro-item {
+      display: grid;
+      grid-template-columns: 1fr 54px;
+      gap: 10px;
+      padding: 9px 11px;
+      border-bottom: 1px solid #edf1f6;
+      font-size: 12px;
+    }
+
+    .micro-item:last-child {
+      border-bottom: 0;
+    }
+
+    .micro-item b {
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .micro-item span {
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    .micro-score {
+      justify-self: end;
+      font-weight: 900;
+      color: var(--blue);
+    }
+
+    .competitor-note {
+      margin-top: 14px;
+      padding: 12px;
+      border: 1px solid #e9d5ff;
+      background: #faf5ff;
+      border-radius: 6px;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .competitor-note b {
+      display: block;
+      margin-bottom: 4px;
+      color: #6b21a8;
+    }
+
+    .detail-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .detail-action {
+      height: 32px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      border-radius: 6px;
+      padding: 0 10px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .detail-action.danger {
+      border-color: #fecaca;
+      color: #b91c1c;
+      background: #fff5f5;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, .55);
+      z-index: 5000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal {
+      width: min(980px, 100%);
+      max-height: 92vh;
+      overflow: auto;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      border: 1px solid #cbd5e1;
+    }
+
+    .modal-head {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .modal-head h2 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .modal-close {
+      width: 34px;
+      height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      cursor: pointer;
+      font-weight: 900;
+    }
+
+    .modal-body {
+      padding: 16px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .locate-panel {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fbfcfe;
+    }
+
+    .locate-tabs {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .locate-tab {
+      height: 32px;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 6px;
+      padding: 0 10px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .locate-tab.active {
+      background: var(--dark);
+      border-color: var(--dark);
+      color: #fff;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      min-width: 0;
+    }
+
+    .form-field.wide {
+      grid-column: span 2;
+    }
+
+    .form-field.full {
+      grid-column: 1 / -1;
+    }
+
+    .form-field label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .form-field input,
+    .form-field select,
+    .form-field textarea {
+      width: 100%;
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 9px 10px;
+      color: var(--ink);
+      background: #fff;
+    }
+
+    .form-field textarea {
+      resize: vertical;
+      min-height: 74px;
+    }
+
+    .candidate-list {
+      grid-column: 1 / -1;
+      display: grid;
+      gap: 8px;
+    }
+
+    .candidate {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 6px;
+      padding: 9px 10px;
+      text-align: left;
+      cursor: pointer;
+      line-height: 1.35;
+    }
+
+    .candidate b {
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .candidate span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      padding-top: 4px;
+    }
+
+    .status-hint {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .score-number {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background: conic-gradient(var(--blue) calc(var(--score) * 1%), #dbeafe 0);
+      display: grid;
+      place-items: center;
+      color: var(--dark);
+      font-weight: 900;
+      position: relative;
+    }
+
+    .score-number::after {
+      content: "";
+      position: absolute;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: #fff;
+      z-index: 0;
+    }
+
+    .score-number span {
+      position: relative;
+      z-index: 1;
+    }
+
+    .rules {
+      padding: 14px 16px;
+      overflow: auto;
+      min-height: 0;
+    }
+
+    .rules h3 {
+      margin: 0 0 10px;
+      font-size: 15px;
+    }
+
+    .rule-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+
+    .rule {
+      display: grid;
+      grid-template-columns: 86px 1fr 46px;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+    }
+
+    .bar {
+      height: 9px;
+      border-radius: 99px;
+      background: #e5e7eb;
+      overflow: hidden;
+    }
+
+    .bar i {
+      display: block;
+      height: 100%;
+      background: var(--blue);
+      border-radius: inherit;
+    }
+
+    .data-panel {
+      min-height: 350px;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    .panel-title {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      background: #fbfcfe;
+    }
+
+    .panel-title h2 {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      min-height: 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      background: #fff;
+    }
+
+    th,
+    td {
+      padding: 10px 9px;
+      border-bottom: 1px solid #e7edf3;
+      text-align: left;
+      vertical-align: top;
+      white-space: nowrap;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 3;
+      background: var(--dark);
+      color: #fff;
+      font-weight: 800;
+    }
+
+    td:nth-child(2),
+    td:nth-child(7),
+    td:nth-child(8),
+    td:nth-child(11) {
+      white-space: normal;
+      min-width: 150px;
+    }
+
+    tbody tr {
+      cursor: pointer;
+    }
+
+    tbody tr:hover {
+      background: #f8fbff;
+    }
+
+    tbody tr.selected {
+      background: #fff7ed;
+      box-shadow: inset 3px 0 0 var(--amber);
+    }
+
+    .leaflet-popup-content {
+      margin: 12px 14px;
+      min-width: 280px;
+    }
+
+    .popup h3 {
+      margin: 0 0 8px;
+      font-size: 16px;
+    }
+
+    .popup dl {
+      display: grid;
+      grid-template-columns: 86px 1fr;
+      gap: 5px 8px;
+      margin: 0;
+      font-size: 12px;
+    }
+
+    .popup dt {
+      color: var(--muted);
+    }
+
+    .popup dd {
+      margin: 0;
+    }
+
+    .popup a {
+      color: var(--blue);
+      font-weight: 800;
+    }
+
+    .pickus-pin {
+      width: 26px;
+      height: 26px;
+      border: 3px solid #fff;
+      border-radius: 50% 50% 50% 0;
+      transform: rotate(-45deg);
+      box-shadow: 0 4px 10px rgba(15, 23, 42, .28);
+      position: relative;
+    }
+
+    .pickus-pin::after {
+      content: "";
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #fff;
+      top: 6px;
+      left: 6px;
+      opacity: .92;
+    }
+
+    .pickus-pin span {
+      position: absolute;
+      inset: -3px;
+      display: grid;
+      place-items: center;
+      transform: rotate(45deg);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 900;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, .35);
+    }
+
+    .pickus-pin span:empty {
+      display: none;
+    }
+
+    @media (max-width: 1120px) {
+      .main {
+        grid-template-columns: 1fr;
+      }
+
+      .map-panel,
+      .side-panel {
+        min-height: auto;
+      }
+
+      #map {
+        height: 560px;
+        min-height: 560px;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .topbar {
+        grid-template-columns: 1fr;
+      }
+
+      .actions {
+        justify-content: flex-start;
+      }
+
+      .main {
+        padding: 10px;
+      }
+
+      .toolbar {
+        grid-template-columns: 1fr;
+      }
+
+      .advanced-filters {
+        grid-template-columns: 1fr;
+      }
+
+      .competitor-filters {
+        grid-template-columns: 1fr;
+      }
+
+      .layer-directory {
+        grid-template-columns: 1fr;
+      }
+
+      .segmented {
+        overflow-x: auto;
+        padding-bottom: 2px;
+      }
+
+      .metrics {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .kv {
+        grid-template-columns: 92px 1fr;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .form-field.wide,
+      .form-field.full {
+        grid-column: 1;
+      }
+
+      .locate-panel {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <h1>PICK US 拍照打印机｜雅加达选址地图</h1>
+        <p>地图点位、热力、人流、客群、推荐摆放位置和 100 分投放评分集中管理。当前数据用于前期初筛，实地复核后可继续扩到 1000+ 点位。</p>
+      </div>
+      <div class="actions">
+        <button class="btn add" id="addPointBtn" type="button">+ 新增点位</button>
+        <button class="btn" id="fitAllBtn" type="button">显示全部点位</button>
+        <button class="btn" id="copyBtn" type="button">复制当前点位</button>
+        <a class="btn primary" href="pick_us_jakarta_points.csv" download>下载 CSV</a>
+      </div>
+    </header>
+
+    <main class="main">
+      <section class="map-panel" aria-label="地图点位">
+        <div class="toolbar">
+          <input class="searchbox" id="searchInput" type="search" placeholder="搜索点位、类型、客群或区域" />
+          <div class="segmented" aria-label="等级筛选">
+            <button class="chip active" type="button" data-grade="all">全部</button>
+            <button class="chip" type="button" data-grade="A">A 优先</button>
+            <button class="chip" type="button" data-grade="B">B 可测试</button>
+            <button class="chip" type="button" data-grade="C">C 暂缓</button>
+          </div>
+          <div class="select-wrap">
+            <select id="typeFilter" aria-label="点位类型筛选">
+              <option value="all">全部类型</option>
+            </select>
+          </div>
+          <div class="advanced-filters">
+            <div class="filter-field">
+              <label for="heatFilter">人口热力</label>
+              <select id="heatFilter">
+                <option value="all">全部热力</option>
+                <option value="高">高</option>
+                <option value="中">中</option>
+                <option value="低">低</option>
+              </select>
+            </div>
+            <div class="filter-field">
+              <label for="customerFilter">主要客群</label>
+              <select id="customerFilter">
+                <option value="all">全部客群</option>
+              </select>
+            </div>
+            <div class="filter-field">
+              <label for="scoreFilter">最低评分</label>
+              <select id="scoreFilter">
+                <option value="0">不限</option>
+                <option value="90">90+ 旗舰优先</option>
+                <option value="85">85+ 强推荐</option>
+                <option value="80">80+ 可优先测试</option>
+                <option value="75">75+ 可观察</option>
+              </select>
+            </div>
+          </div>
+          <div class="competitor-filters">
+            <div class="filter-section-label">竞品/同类分析图层</div>
+            <div class="filter-field">
+              <label for="competitorTypeFilter">竞品类型</label>
+              <select id="competitorTypeFilter">
+                <option value="all">全部竞品</option>
+              </select>
+            </div>
+          </div>
+          <div class="layer-directory">
+            <div class="filter-section-label">图层目录</div>
+            <label class="toggle" for="pickusMarkerToggle">
+              <input id="pickusMarkerToggle" type="checkbox" checked />
+              新增设备图钉
+            </label>
+            <label class="toggle" for="heatLayerToggle">
+              <input id="heatLayerToggle" type="checkbox" checked />
+              区域热力圈
+            </label>
+            <label class="toggle" for="subHeatToggle">
+              <input id="subHeatToggle" type="checkbox" checked />
+              细分热力点
+            </label>
+            <label class="toggle" for="competitorToggle">
+              <input id="competitorToggle" type="checkbox" checked />
+              竞品/同类
+            </label>
+          </div>
+        </div>
+        <div id="map"></div>
+      </section>
+
+      <div class="right-stack">
+        <aside class="side-panel" aria-label="点位详情">
+          <section class="metrics">
+            <div class="metric"><b id="totalCount">0</b><small>当前点位</small></div>
+            <div class="metric"><b id="aCount">0</b><small>A 级优先</small></div>
+            <div class="metric"><b id="avgScore">0</b><small>平均推荐分</small></div>
+            <div class="metric"><b id="topScore">0</b><small>最高评分</small></div>
+          </section>
+
+          <section class="detail" id="detailPanel"></section>
+
+          <section class="rules">
+            <h3>综合推荐评分</h3>
+            <div class="rule-grid">
+              <div class="rule"><span>人口热力</span><div class="bar"><i style="width:25%"></i></div><b>25%</b></div>
+              <div class="rule"><span>人流量</span><div class="bar"><i style="width:35%"></i></div><b>35%</b></div>
+              <div class="rule"><span>客群匹配</span><div class="bar"><i style="width:20%"></i></div><b>20%</b></div>
+              <div class="rule"><span>摆放可行</span><div class="bar"><i style="width:10%"></i></div><b>10%</b></div>
+              <div class="rule"><span>拍照属性</span><div class="bar"><i style="width:10%"></i></div><b>10%</b></div>
+            </div>
+          </section>
+        </aside>
+
+        <section class="data-panel" aria-label="点位表格">
+          <div class="panel-title">
+            <h2>点位信息表</h2>
+            <span class="hint">点击行可定位地图点位</span>
+          </div>
+          <div class="table-wrap">
+            <table id="pointTable">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>点位名称</th>
+                  <th>类型</th>
+                  <th>热力</th>
+                  <th>工作日</th>
+                  <th>周末</th>
+                  <th>主要客群</th>
+                  <th>推荐摆放</th>
+                  <th>最佳细分点</th>
+                  <th>评分</th>
+                  <th>等级</th>
+                  <th>备注</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="pointModal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="pointModalTitle">
+      <div class="modal-head">
+        <h2 id="pointModalTitle">新增点位 / 设备定位</h2>
+        <button class="modal-close" id="closePointModal" type="button">×</button>
+      </div>
+      <form class="modal-body" id="pointForm">
+        <input type="hidden" id="formId" />
+        <section class="locate-panel">
+          <div class="locate-tabs">
+            <button class="locate-tab active" type="button" data-locate-mode="maps">粘贴 Google Maps 链接</button>
+            <button class="locate-tab" type="button" data-locate-mode="search">输入位置名称搜索</button>
+            <button class="locate-tab" type="button" data-locate-mode="click">在地图上手动点击</button>
+          </div>
+          <div class="form-field wide">
+            <label for="locateInput" id="locateInputLabel">Google Maps 链接 / 坐标</label>
+            <input id="locateInput" type="text" placeholder="粘贴 Google Maps 链接，例如含 @-6.17,106.82 或 query=-6.17,106.82" />
+          </div>
+          <button class="detail-action" id="locateActionBtn" type="button">解析定位</button>
+          <div class="candidate-list" id="candidateList"></div>
+          <div class="status-hint" id="locateStatus">也可以输入经纬度格式：-6.1754, 106.8272。短链接若无法解析，请用地图点选或位置搜索。</div>
+        </section>
+
+        <section class="form-grid">
+          <div class="form-field wide">
+            <label for="formName">点位名称</label>
+            <input id="formName" required />
+          </div>
+          <div class="form-field">
+            <label for="formCity">所属城市</label>
+            <input id="formCity" value="Jakarta" />
+          </div>
+          <div class="form-field full">
+            <label for="formAddress">地址</label>
+            <input id="formAddress" />
+          </div>
+          <div class="form-field wide">
+            <label for="formMapsLink">Google Maps 链接</label>
+            <input id="formMapsLink" />
+          </div>
+          <div class="form-field">
+            <label for="formLatLng">经纬度</label>
+            <input id="formLatLng" required placeholder="-6.1754, 106.8272" />
+          </div>
+          <div class="form-field">
+            <label for="formType">点位类型</label>
+            <select id="formType">
+              <option>户外景区</option>
+              <option>户外打卡点</option>
+              <option>小吃街</option>
+              <option>商圈</option>
+              <option>商场</option>
+              <option>学校</option>
+              <option>咖啡餐饮商区</option>
+              <option>活动场馆</option>
+              <option>其他</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="formHeat">人口热力</label>
+            <select id="formHeat">
+              <option>高</option>
+              <option selected>中</option>
+              <option>低</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="formCustomers">主要客群</label>
+            <input id="formCustomers" placeholder="游客; 情侣; 家庭" />
+          </div>
+          <div class="form-field">
+            <label for="formWeekday">工作日人流量</label>
+            <input id="formWeekday" type="number" min="0" value="300" />
+          </div>
+          <div class="form-field">
+            <label for="formWeekend">周末人流量</label>
+            <input id="formWeekend" type="number" min="0" value="600" />
+          </div>
+          <div class="form-field wide">
+            <label for="formPlacement">推荐摆放位置</label>
+            <input id="formPlacement" placeholder="入口 / 等候区 / 打卡点旁" />
+          </div>
+          <div class="form-field">
+            <label for="formCoop">合作状态</label>
+            <select id="formCoop">
+              <option>调研中</option>
+              <option>已联系</option>
+              <option>谈判中</option>
+              <option>已签约</option>
+              <option>暂缓</option>
+              <option>淘汰</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="formDevice">设备状态</label>
+            <select id="formDevice">
+              <option>未安装</option>
+              <option>已签约未安装</option>
+              <option>已安装设备</option>
+              <option>故障 / 离线</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="formGrade">推荐等级</label>
+            <select id="formGrade">
+              <option>A</option>
+              <option selected>B</option>
+              <option>C</option>
+            </select>
+          </div>
+          <div class="form-field full">
+            <label for="formNotes">备注</label>
+            <textarea id="formNotes" placeholder="记录电源、租金、许可、设备安全、现场照片等"></textarea>
+          </div>
+        </section>
+        <div class="modal-actions">
+          <button class="detail-action" id="relocateBtn" type="button">重新定位</button>
+          <button class="detail-action" type="button" id="cancelPointBtn">取消</button>
+          <button class="btn add" type="submit">保存点位</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const points = [
+      { id: "JKT-001", name: "Grand Indonesia Mall", lat: -6.19510, lng: 106.82060, address: "Jl. M.H. Thamrin, Central Jakarta", type: "商场", heat: "高", weekday: 650, weekend: 900, customers: "白领; 情侣; 家庭; 游客", placement: "主入口 / 影院层 / 餐饮等候区", score: 92, grade: "A", decision: "优先", notes: "CBD + 高消费 + 高停留时长，适合旗舰样板点" },
+      { id: "JKT-002", name: "Kota Kasablanka", lat: -6.22410, lng: 106.84270, address: "Jl. Casablanca Raya, South Jakarta", type: "商场", heat: "高", weekday: 580, weekend: 850, customers: "白领; 情侣; 家庭", placement: "餐饮层 / 电梯口 / 活动中庭", score: 89, grade: "A", decision: "优先", notes: "周末家庭和情侣流量强，适合测试高峰排队动线" },
+      { id: "JKT-003", name: "Central Park Mall", lat: -6.17740, lng: 106.79060, address: "Podomoro City, West Jakarta", type: "商场", heat: "高", weekday: 620, weekend: 920, customers: "学生; 情侣; 家庭; 游客", placement: "Neo Soho 连通口 / 餐饮区 / 中庭", score: 91, grade: "A", decision: "优先", notes: "年轻客群密集，社交拍照需求强" },
+      { id: "JKT-004", name: "Blok M MRT / Mall Area", lat: -6.24470, lng: 106.79900, address: "Blok M, South Jakarta", type: "交通+商圈", heat: "高", weekday: 520, weekend: 760, customers: "学生; 白领; 情侣", placement: "MRT 出入口附近 / 商场入口 / 咖啡店外侧", score: 86, grade: "A", decision: "优先", notes: "通勤与夜间消费叠加，适合长营业时段" },
+      { id: "JKT-005", name: "Sarinah Thamrin", lat: -6.18730, lng: 106.82310, address: "Jl. M.H. Thamrin, Central Jakarta", type: "商场+游客点", heat: "高", weekday: 480, weekend: 780, customers: "游客; 白领; 情侣", placement: "主门口 / 纪念品区 / 咖啡区", score: 84, grade: "A", decision: "优先", notes: "游客和本地年轻人混合，适合品牌曝光" },
+      { id: "JKT-006", name: "Plaza Senayan", lat: -6.22560, lng: 106.79930, address: "Senayan, South Jakarta", type: "商场", heat: "中", weekday: 380, weekend: 620, customers: "白领; 情侣; 家庭", placement: "影院层 / 餐饮区 / 连廊", score: 78, grade: "B", decision: "可测试", notes: "消费力高但点位租金可能较高，建议谈分成" },
+      { id: "JKT-007", name: "PIK Avenue", lat: -6.10870, lng: 106.74050, address: "Pantai Indah Kapuk, North Jakarta", type: "商场+休闲区", heat: "中", weekday: 360, weekend: 700, customers: "情侣; 家庭; 游客", placement: "餐饮入口 / 停车场连通口 / 活动区", score: 80, grade: "B", decision: "可测试", notes: "周末强，工作日需观察晚间流量" },
+      { id: "JKT-008", name: "BINUS Anggrek Campus Area", lat: -6.20040, lng: 106.78510, address: "Kemanggisan, West Jakarta", type: "学校", heat: "中", weekday: 430, weekend: 260, customers: "学生", placement: "校门外合作店 / 奶茶店 / 等餐区", score: 76, grade: "B", decision: "可测试", notes: "学生客群匹配强，但需避开假期" },
+      { id: "JKT-009", name: "Kota Tua / Fatahillah Square", lat: -6.13520, lng: 106.81330, address: "Kota Tua, West Jakarta", type: "景区", heat: "中", weekday: 300, weekend: 820, customers: "游客; 情侣; 家庭", placement: "广场周边咖啡店 / 纪念品店入口", score: 82, grade: "B", decision: "可测试", notes: "周末和节假日爆发强，需确认户外供电和安全" },
+      { id: "JKT-010", name: "Plaza Festival Kuningan", lat: -6.22100, lng: 106.83240, address: "Kuningan, South Jakarta", type: "咖啡餐饮商区", heat: "中", weekday: 340, weekend: 520, customers: "白领; 学生; 情侣", placement: "餐饮街入口 / 咖啡店收银台旁", score: 72, grade: "B", decision: "可测试", notes: "适合小成本测试，需实测晚间人流" },
+      { id: "JKT-011", name: "Monas / National Monument", lat: -6.17540, lng: 106.82720, address: "Gambir, Central Jakarta", type: "户外景区", heat: "高", weekday: 420, weekend: 980, customers: "游客; 家庭; 情侣; 学生", placement: "广场入口 / 游客排队区 / 纪念品摊位旁", score: 88, grade: "A", decision: "优先", notes: "雅加达标志性景点，户外曝光强；需重点确认供电、防雨和安保" },
+      { id: "JKT-012", name: "Kota Tua Street Photo Area", lat: -6.13400, lng: 106.81270, address: "Around Fatahillah Square, West Jakarta", type: "户外打卡点", heat: "高", weekday: 360, weekend: 920, customers: "游客; 情侣; 家庭; 学生", placement: "广场拍照点 / 自行车租赁区 / 咖啡店外侧", score: 87, grade: "A", decision: "优先", notes: "拍照场景天然强，适合与周边咖啡店或纪念品店合作" },
+      { id: "JKT-013", name: "Pantjoran PIK / Chinatown PIK", lat: -6.10290, lng: 106.74010, address: "Pantai Indah Kapuk, North Jakarta", type: "小吃街+打卡点", heat: "高", weekday: 420, weekend: 980, customers: "情侣; 家庭; 游客; 年轻人", placement: "牌坊入口 / 小吃摊集中区 / 夜景打卡点", score: 90, grade: "A", decision: "优先", notes: "户外餐饮和拍照属性都强，周末夜间非常适合测试" },
+      { id: "JKT-014", name: "Cove at Batavia PIK", lat: -6.09090, lng: 106.74050, address: "Golf Island PIK, North Jakarta", type: "海边打卡点", heat: "中", weekday: 300, weekend: 760, customers: "情侣; 家庭; 游客; 年轻人", placement: "海边步道 / 餐饮外摆区 / 日落拍照点", score: 83, grade: "B", decision: "可测试", notes: "海边照片需求强，但需确认户外设备防潮、防风和夜间管理" },
+      { id: "JKT-015", name: "Jalan Sabang Food Street", lat: -6.18780, lng: 106.82570, address: "Jl. H. Agus Salim / Sabang, Central Jakarta", type: "小吃街", heat: "高", weekday: 500, weekend: 720, customers: "白领; 游客; 年轻人; 情侣", placement: "小吃摊入口 / 餐后停留点 / 咖啡店外侧", score: 85, grade: "A", decision: "优先", notes: "靠近 Thamrin 办公区，晚餐和夜宵流量稳定，适合夜间运营" },
+      { id: "JKT-016", name: "M Bloc Space", lat: -6.24330, lng: 106.79840, address: "Melawai, South Jakarta", type: "创意街区", heat: "中", weekday: 340, weekend: 700, customers: "年轻人; 情侣; 学生; 白领", placement: "主入口 / 活动区 / 咖啡店与展览入口", score: 84, grade: "A", decision: "优先", notes: "年轻潮流客群集中，适合品牌传播和社交分享" },
+      { id: "JKT-017", name: "Kemang Food & Lifestyle Street", lat: -6.26080, lng: 106.81460, address: "Kemang Raya, South Jakarta", type: "夜生活商圈", heat: "中", weekday: 360, weekend: 680, customers: "年轻人; 情侣; 白领; 外籍客群", placement: "餐饮酒吧街入口 / 咖啡店外摆 / 夜间聚集点", score: 79, grade: "B", decision: "可测试", notes: "夜间消费强，需观察雨天、停车和安全管理" },
+      { id: "JKT-018", name: "Tebet Eco Park", lat: -6.23750, lng: 106.85220, address: "Tebet, South Jakarta", type: "公园打卡点", heat: "中", weekday: 280, weekend: 720, customers: "家庭; 情侣; 学生; 社区居民", placement: "公园入口 / 桥景拍照点 / 周边咖啡摊", score: 77, grade: "B", decision: "可测试", notes: "周末家庭和情侣客群明显，户外供电与许可是关键" },
+      { id: "JKT-019", name: "Gelora Bung Karno / Senayan Gate", lat: -6.21860, lng: 106.80250, address: "GBK Senayan, Central Jakarta", type: "活动场馆+户外商圈", heat: "高", weekday: 420, weekend: 880, customers: "运动人群; 家庭; 情侣; 活动观众", placement: "主入口 / 活动出口 / 周边餐饮摊位", score: 86, grade: "A", decision: "优先", notes: "赛事和演唱会期间爆发强，适合活动型快闪投放" },
+      { id: "JKT-020", name: "Glodok Chinatown / Petak Enam", lat: -6.14470, lng: 106.81290, address: "Glodok, West Jakarta", type: "小吃街+历史街区", heat: "中", weekday: 330, weekend: 680, customers: "游客; 家庭; 年轻人; 美食客", placement: "Petak Enam 入口 / 小吃摊集中区 / 街区打卡墙", score: 81, grade: "B", decision: "可测试", notes: "美食和历史街区属性强，适合周末测试与商户联营" }
+    ];
+
+    const competitors = [
+      { id: "CMP-001", name: "Grand Indonesia Photobooth Cluster", lat: -6.19555, lng: 106.82120, type: "商场拍照机器", intensity: "高", risk: "高", audience: "情侣; 年轻人; 游客", relation: "直接竞品", note: "大型商场内常见即时拍照/贴纸照消费场景，适合观察定价、排队和机器摆位。" },
+      { id: "CMP-002", name: "Central Park / Neo Soho Photo Zone", lat: -6.17785, lng: 106.79015, type: "商场拍照机器", intensity: "高", risk: "高", audience: "学生; 情侣; 家庭", relation: "直接竞品", note: "年轻客群密集，若已有同类机器，需要差异化主题、打印质量和联名活动。" },
+      { id: "CMP-003", name: "PIK Chinatown Photo Booth Area", lat: -6.10335, lng: 106.74055, type: "户外拍照服务", intensity: "中", risk: "中", audience: "游客; 情侣; 家庭", relation: "替代竞品", note: "户外打卡点可能有摄影/手机打印/临时拍照摊位，适合对比夜间客单与照片风格。" },
+      { id: "CMP-004", name: "Kota Tua Instant Photo Vendors", lat: -6.13455, lng: 106.81315, type: "景区拍照服务", intensity: "高", risk: "中", audience: "游客; 家庭; 情侣", relation: "替代竞品", note: "景区人工拍照和纪念照片服务集中，PICK US 可强调自主、快速、社交分享和可爱模板。" },
+      { id: "CMP-005", name: "Blok M / M Bloc Self Photo Cluster", lat: -6.24375, lng: 106.79875, type: "自拍馆/拍照馆", intensity: "中", risk: "中", audience: "年轻人; 学生; 情侣", relation: "同类竞品", note: "潮流街区适合观察 self photo studio、K-style photobooth、活动快闪机的客群反应。" },
+      { id: "CMP-006", name: "Kemang Studio & Lifestyle Photo Area", lat: -6.26120, lng: 106.81515, type: "自拍馆/拍照馆", intensity: "中", risk: "中", audience: "年轻人; 白领; 外籍客群", relation: "同类竞品", note: "生活方式街区内摄影棚、自拍馆、活动拍照装置可能竞争晚间和周末需求。" },
+      { id: "CMP-007", name: "Sarinah / Thamrin Tourist Photo Services", lat: -6.18770, lng: 106.82355, type: "游客拍照服务", intensity: "中", risk: "中", audience: "游客; 白领; 情侣", relation: "替代竞品", note: "游客与城市打卡需求明显，可观察纪念品店、相片打印和街头摄影服务。" },
+      { id: "CMP-008", name: "Pantai Indah Kapuk Lifestyle Photo Spots", lat: -6.09145, lng: 106.74105, type: "户外拍照服务", intensity: "中", risk: "低", audience: "情侣; 家庭; 年轻人", relation: "生态参考", note: "海边与餐饮外摆场景更像拍照生态点，适合寻找合作商户而非正面对抗。" },
+      { id: "CMP-009", name: "Senayan Event Photo Booth Zone", lat: -6.21910, lng: 106.80295, type: "活动快闪拍照", intensity: "高", risk: "高", audience: "活动观众; 运动人群; 家庭", relation: "直接竞品", note: "赛事、展会、演唱会期间品牌快闪 photobooth 竞争强，适合活动档期专项观察。" },
+      { id: "CMP-010", name: "Sabang Food Street Mobile Photo Vendors", lat: -6.18825, lng: 106.82615, type: "移动拍照/打印", intensity: "中", risk: "低", audience: "白领; 游客; 年轻人", relation: "替代竞品", note: "夜间小吃街可能出现移动拍照、即时打印或街头摄影，适合测试轻量机器点位。" },
+      { id: "CMP-011", name: "Tebet Park Weekend Photo Services", lat: -6.23795, lng: 106.85265, type: "公园拍照服务", intensity: "低", risk: "低", audience: "家庭; 情侣; 社区居民", relation: "生态参考", note: "周末亲子和情侣拍照明显，但商业化程度较低，需要关注许可和户外安全。" },
+      { id: "CMP-012", name: "Glodok / Petak Enam Photo Spot Vendors", lat: -6.14515, lng: 106.81335, type: "街区拍照服务", intensity: "中", risk: "中", audience: "游客; 美食客; 年轻人", relation: "替代竞品", note: "历史街区和美食打卡结合，适合与餐饮商户、纪念品商户合作避开正面竞争。" }
+    ];
+
+    const hotspotOffsets = [
+      { key: "入口动线", lat: 0.00105, lng: -0.00110, weight: 1.00 },
+      { key: "餐饮/等候区", lat: -0.00085, lng: 0.00115, weight: 0.92 },
+      { key: "收银/合作店", lat: 0.00055, lng: 0.00145, weight: 0.84 },
+      { key: "拍照/活动区", lat: -0.00115, lng: -0.00075, weight: 0.78 }
+    ];
+
+    const placementByType = {
+      "商场": ["主入口客流汇合处", "餐饮层等候区", "影院/娱乐层出口", "中庭活动边缘"],
+      "商场+游客点": ["主入口游客动线", "纪念品区旁", "咖啡区收银旁", "地标拍照点边缘"],
+      "商场+休闲区": ["餐饮入口", "停车场连通口", "活动区外侧", "热门餐厅等候区"],
+      "交通+商圈": ["MRT 出入口", "商场入口连廊", "咖啡店外侧", "晚间聚集点"],
+      "学校": ["校门外合作店", "奶茶店等餐区", "学生社团活动点", "打印/便利店旁"],
+      "景区": ["广场入口", "咖啡店门口", "纪念品店入口", "游客拍照停留点"],
+      "咖啡餐饮商区": ["餐饮街入口", "咖啡店收银台旁", "外摆等候区", "晚间聚会入口"],
+      "户外景区": ["游客入口", "排队等候区", "纪念品摊位旁", "地标拍照点"],
+      "户外打卡点": ["主拍照位", "咖啡店外侧", "游客停留区", "街头表演边缘"],
+      "小吃街+打卡点": ["牌坊入口", "小吃摊集中区", "夜景打卡点", "餐后停留区"],
+      "海边打卡点": ["海边步道", "日落拍照点", "餐饮外摆区", "停车场连通口"],
+      "小吃街": ["小吃摊入口", "餐后停留点", "咖啡店外侧", "夜宵聚集点"],
+      "创意街区": ["主入口", "活动区", "展览入口", "咖啡店外摆"],
+      "夜生活商圈": ["餐饮酒吧街入口", "咖啡店外摆", "夜间聚集点", "停车/叫车点"],
+      "公园打卡点": ["公园入口", "桥景拍照点", "周边咖啡摊", "家庭休息区"],
+      "活动场馆+户外商圈": ["主入口", "活动出口", "周边餐饮摊位", "集合拍照点"],
+      "小吃街+历史街区": ["街区入口", "小吃摊集中区", "打卡墙", "纪念品店旁"]
+    };
+
+    function buildMicroSpots(point) {
+      const labels = placementByType[point.type] || placementByType["商场"];
+      const peak = Math.max(point.weekday, point.weekend);
+      return hotspotOffsets.map((spot, index) => {
+        const score = Math.min(98, Math.round(point.score * spot.weight + (index === 0 ? 4 : 0)));
+        const flow = Math.round(peak * spot.weight * (0.42 - index * 0.035));
+        return {
+          id: `${point.id}-H${index + 1}`,
+          name: labels[index],
+          lat: point.lat + spot.lat,
+          lng: point.lng + spot.lng,
+          zone: spot.key,
+          flow,
+          score,
+          recommendation: score >= 88 ? "优先摆放" : score >= 80 ? "重点观察" : "备选观察"
+        };
+      });
+    }
+
+    points.forEach((point) => {
+      point.microSpots = buildMicroSpots(point);
+      point.bestMicroSpot = point.microSpots.slice().sort((a, b) => b.score - a.score)[0];
+    });
+
+    const gradeColor = { A: "#e03131", B: "#f59f00", C: "#2f9e44" };
+    const competitorColor = { "高": "#7c3aed", "中": "#2563eb", "低": "#0891b2" };
+    const customStatusColor = {
+      "已安装设备": "#16a34a",
+      "已签约未安装": "#2563eb",
+      "调研中": "#f59f00",
+      "A级优先": "#7c3aed",
+      "暂缓 / 淘汰": "#ef4444",
+      "故障 / 离线": "#111827"
+    };
+    const heatRadius = { "高": 520, "中": 340, "低": 220 };
+    const competitorRadius = { "高": 360, "中": 250, "低": 170 };
+    const markers = new Map();
+    const competitorMarkers = new Map();
+    const customMarkers = new Map();
+    const layers = L.featureGroup();
+    const competitorLayers = L.featureGroup();
+    const customLayers = L.featureGroup();
+    const rows = new Map();
+    let activeGrade = "all";
+    let showPickusMarkers = true;
+    let showSubHeat = true;
+    let showHeatLayer = true;
+    let showCompetitors = true;
+    let customPoints = loadCustomPoints();
+    let locateMode = "maps";
+    let pendingMapPick = false;
+    let tempPickMarker = null;
+    let activePoint = points[0];
+
+    const map = L.map("map", { scrollWheelZoom: true }).setView([-6.190, 106.810], 11);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "&copy; OpenStreetMap contributors"
+    }).addTo(map);
+    layers.addTo(map);
+    competitorLayers.addTo(map);
+    customLayers.addTo(map);
+
+    const typeFilter = document.getElementById("typeFilter");
+    const heatFilter = document.getElementById("heatFilter");
+    const customerFilter = document.getElementById("customerFilter");
+    const scoreFilter = document.getElementById("scoreFilter");
+    const pickusMarkerToggle = document.getElementById("pickusMarkerToggle");
+    const subHeatToggle = document.getElementById("subHeatToggle");
+    const heatLayerToggle = document.getElementById("heatLayerToggle");
+    const competitorTypeFilter = document.getElementById("competitorTypeFilter");
+    const competitorToggle = document.getElementById("competitorToggle");
+    const pointModal = document.getElementById("pointModal");
+    const pointForm = document.getElementById("pointForm");
+    const locateInput = document.getElementById("locateInput");
+    const locateStatus = document.getElementById("locateStatus");
+    const candidateList = document.getElementById("candidateList");
+
+    [...new Set(points.map((point) => point.type))].sort().forEach((type) => {
+      const option = document.createElement("option");
+      option.value = type;
+      option.textContent = type;
+      typeFilter.appendChild(option);
+    });
+
+    [...new Set(points.flatMap((point) => point.customers.split(";").map((item) => item.trim())))].sort().forEach((customer) => {
+      const option = document.createElement("option");
+      option.value = customer;
+      option.textContent = customer;
+      customerFilter.appendChild(option);
+    });
+
+    [...new Set(competitors.map((item) => item.type))].sort().forEach((type) => {
+      const option = document.createElement("option");
+      option.value = type;
+      option.textContent = type;
+      competitorTypeFilter.appendChild(option);
+    });
+
+    function mapsLink(point) {
+      return `https://www.google.com/maps/search/?api=1&query=${point.lat},${point.lng}`;
+    }
+
+    function loadCustomPoints() {
+      try {
+        return JSON.parse(localStorage.getItem("pickUsCustomPoints") || "[]");
+      } catch {
+        return [];
+      }
+    }
+
+    function saveCustomPoints() {
+      localStorage.setItem("pickUsCustomPoints", JSON.stringify(customPoints));
+    }
+
+    function getStatusColor(point) {
+      if (point.deviceStatus === "已安装设备") return customStatusColor["已安装设备"];
+      if (point.deviceStatus === "已签约未安装") return customStatusColor["已签约未安装"];
+      if (point.deviceStatus === "故障 / 离线") return customStatusColor["故障 / 离线"];
+      if (point.coopStatus === "暂缓" || point.coopStatus === "淘汰" || point.grade === "C") return customStatusColor["暂缓 / 淘汰"];
+      if (point.grade === "A") return customStatusColor["A级优先"];
+      return customStatusColor["调研中"];
+    }
+
+    function makePickusPinIcon(color, label = "") {
+      return L.divIcon({
+        className: "",
+        html: `<div class="pickus-pin" style="background:${color}"><span>${label}</span></div>`,
+        iconSize: [30, 36],
+        iconAnchor: [15, 31],
+        popupAnchor: [0, -30]
+      });
+    }
+
+    function parseLatLng(value) {
+      const text = String(value || "").trim();
+      const patterns = [
+        /@(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/,
+        /[?&]query=(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/,
+        /[?&]q=(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/,
+        /(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/
+      ];
+      for (const pattern of patterns) {
+        const match = decodeURIComponent(text).match(pattern);
+        if (match) {
+          const lat = Number(match[1]);
+          const lng = Number(match[2]);
+          if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng };
+        }
+      }
+      return null;
+    }
+
+    function setLatLngFields(lat, lng) {
+      document.getElementById("formLatLng").value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+      document.getElementById("formMapsLink").value = `https://www.google.com/maps/search/?api=1&query=${lat.toFixed(6)},${lng.toFixed(6)}`;
+      if (tempPickMarker) map.removeLayer(tempPickMarker);
+      tempPickMarker = L.marker([lat, lng]).addTo(map);
+      map.flyTo([lat, lng], 15, { duration: 0.5 });
+    }
+
+    async function reverseGeocode(lat, lng) {
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`);
+        const data = await res.json();
+        if (data.display_name && !document.getElementById("formAddress").value) document.getElementById("formAddress").value = data.display_name;
+        if (data.name && !document.getElementById("formName").value) document.getElementById("formName").value = data.name;
+        locateStatus.textContent = "已获取经纬度和候选地址，可继续补充业务字段。";
+      } catch {
+        locateStatus.textContent = "已获取经纬度；地址反查失败，可手动填写地址。";
+      }
+    }
+
+    function matchesFilters(point) {
+      const term = document.getElementById("searchInput").value.trim().toLowerCase();
+      const type = typeFilter.value;
+      const heat = heatFilter.value;
+      const customer = customerFilter.value;
+      const minScore = Number(scoreFilter.value);
+      const microText = point.microSpots.map((spot) => `${spot.name} ${spot.zone} ${spot.recommendation}`).join(" ");
+      const text = [point.id, point.name, point.address, point.type, point.heat, point.customers, point.placement, point.notes, microText].join(" ").toLowerCase();
+      return (activeGrade === "all" || point.grade === activeGrade)
+        && (type === "all" || point.type === type)
+        && (heat === "all" || point.heat === heat)
+        && (customer === "all" || point.customers.includes(customer))
+        && point.score >= minScore
+        && (!term || text.includes(term));
+    }
+
+    function gradeBadge(point) {
+      return `<span class="badge grade-${point.grade}">${point.grade}</span>`;
+    }
+
+    function popupHtml(point) {
+      return `
+        <div class="popup">
+          <h3>${point.id} | ${point.name}</h3>
+          <dl>
+            <dt>地址</dt><dd>${point.address}</dd>
+            <dt>类型</dt><dd>${point.type}</dd>
+            <dt>人口热力</dt><dd>${point.heat}</dd>
+            <dt>人流量</dt><dd>工作日 ${point.weekday} / 周末 ${point.weekend} 人/小时</dd>
+            <dt>主要客群</dt><dd>${point.customers}</dd>
+            <dt>推荐摆放</dt><dd>${point.placement}</dd>
+            <dt>推荐评分</dt><dd><b>${point.score}</b> / 100，${point.grade}（${point.decision}）</dd>
+            <dt>地图链接</dt><dd><a href="${mapsLink(point)}" target="_blank" rel="noreferrer">打开 Google Maps</a></dd>
+          </dl>
+        </div>
+      `;
+    }
+
+    function microPopupHtml(point, spot) {
+      return `
+        <div class="popup">
+          <h3>${spot.id} | ${spot.name}</h3>
+          <dl>
+            <dt>所属点位</dt><dd>${point.name}</dd>
+            <dt>细分区域</dt><dd>${spot.zone}</dd>
+            <dt>预估人流</dt><dd>${spot.flow} 人/小时</dd>
+            <dt>节点评分</dt><dd><b>${spot.score}</b> / 100</dd>
+            <dt>建议</dt><dd>${spot.recommendation}</dd>
+            <dt>用途</dt><dd>用于实地调研时记录更精确的摆放位置、排队动线和机器安全条件。</dd>
+          </dl>
+        </div>
+      `;
+    }
+
+    function competitorPopupHtml(item) {
+      return `
+        <div class="popup">
+          <h3>${item.id} | ${item.name}</h3>
+          <dl>
+            <dt>竞品类型</dt><dd>${item.type}</dd>
+            <dt>竞品强度</dt><dd>${item.intensity}</dd>
+            <dt>风险等级</dt><dd>${item.risk}</dd>
+            <dt>客群</dt><dd>${item.audience}</dd>
+            <dt>关系</dt><dd>${item.relation}</dd>
+            <dt>观察建议</dt><dd>${item.note}</dd>
+          </dl>
+        </div>
+      `;
+    }
+
+    function customPopupHtml(point) {
+      return `
+        <div class="popup">
+          <h3>${point.id} | ${point.name}</h3>
+          <dl>
+            <dt>地址</dt><dd>${point.address || "-"}</dd>
+            <dt>类型</dt><dd>${point.type}</dd>
+            <dt>合作状态</dt><dd>${point.coopStatus}</dd>
+            <dt>设备状态</dt><dd>${point.deviceStatus}</dd>
+            <dt>推荐等级</dt><dd>${point.grade}</dd>
+            <dt>人流量</dt><dd>工作日 ${point.weekday} / 周末 ${point.weekend} 人/小时</dd>
+            <dt>地图链接</dt><dd><a href="${point.mapsLink || mapsLink(point)}" target="_blank" rel="noreferrer">打开 Google Maps</a></dd>
+          </dl>
+        </div>
+      `;
+    }
+
+    function buildLayers() {
+      points.forEach((point) => {
+        const color = gradeColor[point.grade] || gradeColor.C;
+        const circle = L.circle([point.lat, point.lng], {
+          radius: heatRadius[point.heat] || 220,
+          color,
+          fillColor: color,
+          fillOpacity: point.heat === "高" ? 0.18 : 0.11,
+          weight: 1
+        });
+        const marker = L.circleMarker([point.lat, point.lng], {
+          radius: point.grade === "A" ? 9 : 7,
+          color: "#fff",
+          fillColor: color,
+          fillOpacity: 0.96,
+          weight: 2
+        }).bindPopup(popupHtml(point));
+        marker.on("click", () => selectPoint(point, true));
+        const microLayers = point.microSpots.flatMap((spot) => {
+          const microCircle = L.circle([spot.lat, spot.lng], {
+            radius: Math.max(80, spot.flow * 0.45),
+            color,
+            fillColor: color,
+            fillOpacity: 0.08,
+            weight: 1,
+            dashArray: "3 4"
+          });
+          const microMarker = L.circleMarker([spot.lat, spot.lng], {
+            radius: Math.max(4, Math.min(7, spot.score / 14)),
+            color,
+            fillColor: "#fff",
+            fillOpacity: 0.96,
+            weight: 2
+          }).bindPopup(microPopupHtml(point, spot));
+          microMarker.on("click", () => selectPoint(point, false));
+          return [microCircle, microMarker];
+        });
+        markers.set(point.id, { marker, circle, microLayers });
+      });
+
+      competitors.forEach((item) => {
+        const color = competitorColor[item.intensity] || "#7c3aed";
+        const circle = L.circle([item.lat, item.lng], {
+          radius: competitorRadius[item.intensity] || 220,
+          color,
+          fillColor: color,
+          fillOpacity: item.intensity === "高" ? 0.15 : 0.09,
+          weight: 1,
+          dashArray: "6 5"
+        });
+        const marker = L.circleMarker([item.lat, item.lng], {
+          radius: item.intensity === "高" ? 9 : 7,
+          color: "#fff",
+          fillColor: color,
+          fillOpacity: 1,
+          weight: 2
+        }).bindPopup(competitorPopupHtml(item));
+        marker.on("click", () => selectCompetitor(item));
+        competitorMarkers.set(item.id, { marker, circle });
+      });
+
+      rebuildCustomLayers();
+    }
+
+    function rebuildCustomLayers() {
+      customLayers.clearLayers();
+      customMarkers.clear();
+      customPoints.forEach((point) => {
+        const color = getStatusColor(point);
+        const marker = L.marker([point.lat, point.lng], {
+          icon: makePickusPinIcon(color, point.deviceStatus === "已安装设备" ? "✓" : point.grade)
+        }).bindPopup(customPopupHtml(point));
+        const halo = L.circle([point.lat, point.lng], {
+          radius: point.heat === "高" ? 380 : point.heat === "中" ? 260 : 170,
+          color,
+          fillColor: color,
+          fillOpacity: 0.10,
+          weight: 1
+        });
+        marker.on("click", () => selectCustomPoint(point, true));
+        customMarkers.set(point.id, { marker, halo });
+        if (showHeatLayer) halo.addTo(customLayers);
+        if (showPickusMarkers) marker.addTo(customLayers);
+      });
+    }
+
+    function renderTable(filtered) {
+      const tbody = document.querySelector("#pointTable tbody");
+      tbody.innerHTML = "";
+      rows.clear();
+      filtered
+        .slice()
+        .sort((a, b) => b.score - a.score)
+        .forEach((point) => {
+          const row = document.createElement("tr");
+          row.dataset.id = point.id;
+          row.innerHTML = `
+            <td>${point.id}</td>
+            <td>${point.name}</td>
+            <td>${point.type}</td>
+            <td>${point.heat}</td>
+            <td>${point.weekday}</td>
+            <td>${point.weekend}</td>
+            <td>${point.customers}</td>
+            <td>${point.placement}</td>
+            <td>${point.bestMicroSpot.name} / ${point.bestMicroSpot.score}</td>
+            <td><b>${point.score}</b></td>
+            <td>${gradeBadge(point)} ${point.decision}</td>
+            <td>${point.notes}</td>
+          `;
+          row.addEventListener("click", () => selectPoint(point, true));
+          rows.set(point.id, row);
+          tbody.appendChild(row);
+        });
+    }
+
+    function renderMetrics(filtered) {
+      const count = filtered.length;
+      const avg = count ? Math.round(filtered.reduce((sum, point) => sum + point.score, 0) / count) : 0;
+      const top = count ? Math.max(...filtered.map((point) => point.score)) : 0;
+      document.getElementById("totalCount").textContent = count;
+      document.getElementById("aCount").textContent = filtered.filter((point) => point.grade === "A").length;
+      document.getElementById("avgScore").textContent = avg;
+      document.getElementById("topScore").textContent = top;
+    }
+
+    function renderDetail(point) {
+      const panel = document.getElementById("detailPanel");
+      panel.innerHTML = `
+        <div class="detail-head">
+          <div>
+            <h2>${point.name}</h2>
+            <div class="id">${point.id} · ${point.address}</div>
+          </div>
+          ${gradeBadge(point)}
+        </div>
+        <dl class="kv">
+          <dt>点位类型</dt><dd>${point.type}</dd>
+          <dt>人口热力</dt><dd>${point.heat}</dd>
+          <dt>人流量</dt><dd>工作日 ${point.weekday} / 周末 ${point.weekend} 人/小时</dd>
+          <dt>主要客群</dt><dd>${point.customers}</dd>
+          <dt>推荐摆放</dt><dd>${point.placement}</dd>
+          <dt>最佳细分点</dt><dd>${point.bestMicroSpot.name}（${point.bestMicroSpot.score}/100，${point.bestMicroSpot.flow} 人/小时）</dd>
+          <dt>投放分类</dt><dd>${point.grade}（${point.decision}）</dd>
+          <dt>Google Maps</dt><dd><a href="${mapsLink(point)}" target="_blank" rel="noreferrer" style="color:var(--blue);font-weight:800;">打开坐标链接</a></dd>
+          <dt>调研备注</dt><dd>${point.notes}</dd>
+        </dl>
+        <div class="score-card">
+          <div class="score-number" style="--score:${point.score}"><span>${point.score}</span></div>
+          <div>
+            <b>综合推荐评分 / 100</b>
+            <div class="hint">A = 优先投放，B = 可小规模测试，C = 暂缓。当前为前期初筛分，建议现场复核电源、租金、动线和机器安全。</div>
+          </div>
+        </div>
+        <div class="micro-list">
+          <h3>大热力点内部细分节点</h3>
+          ${point.microSpots.map((spot) => `
+            <div class="micro-item">
+              <div>
+                <b>${spot.name}</b>
+                <span>${spot.zone} · ${spot.flow} 人/小时 · ${spot.recommendation}</span>
+              </div>
+              <div class="micro-score">${spot.score}</div>
+            </div>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    function renderCompetitorDetail(item) {
+      const panel = document.getElementById("detailPanel");
+      panel.innerHTML = `
+        <div class="detail-head">
+          <div>
+            <h2>${item.name}</h2>
+            <div class="id">${item.id} · 竞品/同类观察点</div>
+          </div>
+          <span class="badge" style="background:${competitorColor[item.intensity] || "#7c3aed"}">${item.intensity}</span>
+        </div>
+        <dl class="kv">
+          <dt>竞品类型</dt><dd>${item.type}</dd>
+          <dt>竞品强度</dt><dd>${item.intensity}</dd>
+          <dt>风险等级</dt><dd>${item.risk}</dd>
+          <dt>主要客群</dt><dd>${item.audience}</dd>
+          <dt>竞争关系</dt><dd>${item.relation}</dd>
+          <dt>Google Maps</dt><dd><a href="https://www.google.com/maps/search/?api=1&query=${item.lat},${item.lng}" target="_blank" rel="noreferrer" style="color:var(--blue);font-weight:800;">打开坐标链接</a></dd>
+          <dt>观察建议</dt><dd>${item.note}</dd>
+        </dl>
+        <div class="competitor-note">
+          <b>竞品分析提示</b>
+          这类点位不一定都适合直接投放 PICK US。高强度竞品点适合观察价格、模板、排队和用户停留；低强度生态点更适合找合作商户、做快闪或避开正面竞争。
+        </div>
+      `;
+    }
+
+    function renderCustomDetail(point) {
+      const panel = document.getElementById("detailPanel");
+      const color = getStatusColor(point);
+      panel.innerHTML = `
+        <div class="detail-head">
+          <div>
+            <h2>${point.name}</h2>
+            <div class="id">${point.id} · ${point.city || "Jakarta"} · 自定义设备/候选点位</div>
+          </div>
+          <span class="badge" style="background:${color}">${point.deviceStatus === "未安装" ? point.grade : point.deviceStatus}</span>
+        </div>
+        <dl class="kv">
+          <dt>地址</dt><dd>${point.address || "-"}</dd>
+          <dt>经纬度</dt><dd>${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}</dd>
+          <dt>点位类型</dt><dd>${point.type}</dd>
+          <dt>所属城市</dt><dd>${point.city || "-"}</dd>
+          <dt>人口热力</dt><dd>${point.heat}</dd>
+          <dt>主要客群</dt><dd>${point.customers || "-"}</dd>
+          <dt>人流量</dt><dd>工作日 ${point.weekday} / 周末 ${point.weekend} 人/小时</dd>
+          <dt>推荐摆放</dt><dd>${point.placement || "-"}</dd>
+          <dt>合作状态</dt><dd>${point.coopStatus}</dd>
+          <dt>设备状态</dt><dd>${point.deviceStatus}</dd>
+          <dt>推荐等级</dt><dd>${point.grade}</dd>
+          <dt>Google Maps</dt><dd><a href="${point.mapsLink || mapsLink(point)}" target="_blank" rel="noreferrer" style="color:var(--blue);font-weight:800;">打开坐标链接</a></dd>
+          <dt>备注</dt><dd>${point.notes || "-"}</dd>
+        </dl>
+        <div class="detail-actions">
+          <button class="detail-action" type="button" onclick="window.editCustomPoint('${point.id}')">修改</button>
+          <button class="detail-action" type="button" onclick="window.relocateCustomPoint('${point.id}')">重新定位</button>
+          <button class="detail-action danger" type="button" onclick="window.deleteCustomPoint('${point.id}')">删除</button>
+        </div>
+      `;
+    }
+
+    function selectPoint(point, flyTo) {
+      activePoint = point;
+      renderDetail(point);
+      document.querySelectorAll("tbody tr.selected").forEach((row) => row.classList.remove("selected"));
+      const row = rows.get(point.id);
+      if (row) {
+        row.classList.add("selected");
+        row.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      }
+      const layer = markers.get(point.id);
+      if (layer) {
+        if (flyTo) map.flyTo([point.lat, point.lng], 14, { duration: 0.5 });
+        layer.marker.openPopup();
+      }
+    }
+
+    function selectCompetitor(item) {
+      renderCompetitorDetail(item);
+      document.querySelectorAll("tbody tr.selected").forEach((row) => row.classList.remove("selected"));
+      const layer = competitorMarkers.get(item.id);
+      if (layer) {
+        map.flyTo([item.lat, item.lng], 14, { duration: 0.5 });
+        layer.marker.openPopup();
+      }
+    }
+
+    function selectCustomPoint(point, flyTo) {
+      renderCustomDetail(point);
+      document.querySelectorAll("tbody tr.selected").forEach((row) => row.classList.remove("selected"));
+      const layer = customMarkers.get(point.id);
+      if (layer) {
+        if (flyTo) map.flyTo([point.lat, point.lng], 15, { duration: 0.5 });
+        layer.marker.openPopup();
+      }
+    }
+
+    function matchesCompetitorFilters(item) {
+      const type = competitorTypeFilter.value;
+      const term = document.getElementById("searchInput").value.trim().toLowerCase();
+      const text = [item.id, item.name, item.type, item.intensity, item.risk, item.audience, item.relation, item.note].join(" ").toLowerCase();
+      return showCompetitors
+        && (type === "all" || item.type === type)
+        && (!term || text.includes(term));
+    }
+
+    function applyFilters() {
+      layers.clearLayers();
+      competitorLayers.clearLayers();
+      const filtered = points.filter(matchesFilters);
+      const filteredCompetitors = competitors.filter(matchesCompetitorFilters);
+      rebuildCustomLayers();
+      filtered.forEach((point) => {
+        const layer = markers.get(point.id);
+        if (layer) {
+          if (showHeatLayer) {
+            layer.circle.addTo(layers);
+            layer.marker.addTo(layers);
+          }
+          if (showSubHeat && showHeatLayer) {
+            layer.microLayers.forEach((microLayer) => microLayer.addTo(layers));
+          }
+        }
+      });
+      filteredCompetitors.forEach((item) => {
+        const layer = competitorMarkers.get(item.id);
+        if (layer) {
+          if (showHeatLayer) layer.circle.addTo(competitorLayers);
+          layer.marker.addTo(competitorLayers);
+        }
+      });
+      renderTable(filtered);
+      renderMetrics(filtered);
+      if (filtered.length) {
+        const next = filtered.includes(activePoint) ? activePoint : filtered[0];
+        selectPoint(next, false);
+        const visible = L.featureGroup([...layers.getLayers(), ...competitorLayers.getLayers(), ...customLayers.getLayers()]);
+        if (visible.getLayers().length) map.fitBounds(visible.getBounds().pad(0.18));
+      } else {
+        document.getElementById("detailPanel").innerHTML = filteredCompetitors.length
+          ? "<p class='hint'>当前只显示竞品/同类观察点。点击紫色或蓝色点查看竞品分析。</p>"
+          : "<p class='hint'>没有符合筛选条件的点位。</p>";
+      }
+    }
+
+    document.querySelectorAll("[data-grade]").forEach((button) => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll("[data-grade]").forEach((item) => item.classList.remove("active"));
+        button.classList.add("active");
+        activeGrade = button.dataset.grade;
+        applyFilters();
+      });
+    });
+
+    document.getElementById("searchInput").addEventListener("input", applyFilters);
+    typeFilter.addEventListener("change", applyFilters);
+    heatFilter.addEventListener("change", applyFilters);
+    customerFilter.addEventListener("change", applyFilters);
+    scoreFilter.addEventListener("change", applyFilters);
+    pickusMarkerToggle.addEventListener("change", () => {
+      showPickusMarkers = pickusMarkerToggle.checked;
+      applyFilters();
+    });
+    subHeatToggle.addEventListener("change", () => {
+      showSubHeat = subHeatToggle.checked;
+      applyFilters();
+    });
+    heatLayerToggle.addEventListener("change", () => {
+      showHeatLayer = heatLayerToggle.checked;
+      applyFilters();
+    });
+    competitorTypeFilter.addEventListener("change", applyFilters);
+    competitorToggle.addEventListener("change", () => {
+      showCompetitors = competitorToggle.checked;
+      applyFilters();
+    });
+    document.getElementById("addPointBtn").addEventListener("click", () => openPointModal());
+    document.getElementById("closePointModal").addEventListener("click", closePointModal);
+    document.getElementById("cancelPointBtn").addEventListener("click", closePointModal);
+    document.getElementById("relocateBtn").addEventListener("click", () => setLocateMode("click"));
+    document.querySelectorAll("[data-locate-mode]").forEach((button) => {
+      button.addEventListener("click", () => setLocateMode(button.dataset.locateMode));
+    });
+    document.getElementById("locateActionBtn").addEventListener("click", handleLocateAction);
+    pointForm.addEventListener("submit", savePointFromForm);
+    map.on("click", async (event) => {
+      if (!pendingMapPick) return;
+      const { lat, lng } = event.latlng;
+      setLatLngFields(lat, lng);
+      pendingMapPick = false;
+      locateStatus.textContent = "已通过地图点击选择位置。";
+      await reverseGeocode(lat, lng);
+      pointModal.classList.add("open");
+      pointModal.setAttribute("aria-hidden", "false");
+    });
+    document.getElementById("fitAllBtn").addEventListener("click", () => {
+      const visible = L.featureGroup([...layers.getLayers(), ...competitorLayers.getLayers(), ...customLayers.getLayers()]);
+      if (visible.getLayers().length) map.fitBounds(visible.getBounds().pad(0.18));
+    });
+    document.getElementById("copyBtn").addEventListener("click", async () => {
+      const text = [
+        `${activePoint.id} ${activePoint.name}`,
+        `类型：${activePoint.type}`,
+        `热力：${activePoint.heat}`,
+        `人流：工作日 ${activePoint.weekday} / 周末 ${activePoint.weekend} 人/小时`,
+        `客群：${activePoint.customers}`,
+        `摆放：${activePoint.placement}`,
+        `最佳细分点：${activePoint.bestMicroSpot.name}（${activePoint.bestMicroSpot.score}/100，${activePoint.bestMicroSpot.flow} 人/小时）`,
+        `评分：${activePoint.score}/100，${activePoint.grade}（${activePoint.decision}）`,
+        `地图：${mapsLink(activePoint)}`
+      ].join("\n");
+      await navigator.clipboard.writeText(text);
+      document.getElementById("copyBtn").textContent = "已复制";
+      setTimeout(() => { document.getElementById("copyBtn").textContent = "复制当前点位"; }, 1200);
+    });
+
+    buildLayers();
+    applyFilters();
+
+    function openPointModal(point) {
+      pointForm.reset();
+      candidateList.innerHTML = "";
+      document.getElementById("formId").value = point?.id || "";
+      document.getElementById("pointModalTitle").textContent = point ? "修改点位 / 设备定位" : "新增点位 / 设备定位";
+      document.getElementById("formCity").value = point?.city || "Jakarta";
+      if (point) fillForm(point);
+      setLocateMode("maps");
+      pointModal.classList.add("open");
+      pointModal.setAttribute("aria-hidden", "false");
+    }
+
+    function closePointModal() {
+      pointModal.classList.remove("open");
+      pointModal.setAttribute("aria-hidden", "true");
+      pendingMapPick = false;
+      if (tempPickMarker) {
+        map.removeLayer(tempPickMarker);
+        tempPickMarker = null;
+      }
+    }
+
+    function fillForm(point) {
+      document.getElementById("formName").value = point.name || "";
+      document.getElementById("formAddress").value = point.address || "";
+      document.getElementById("formMapsLink").value = point.mapsLink || mapsLink(point);
+      document.getElementById("formLatLng").value = `${point.lat}, ${point.lng}`;
+      document.getElementById("formType").value = point.type || "户外打卡点";
+      document.getElementById("formCity").value = point.city || "Jakarta";
+      document.getElementById("formHeat").value = point.heat || "中";
+      document.getElementById("formCustomers").value = point.customers || "";
+      document.getElementById("formWeekday").value = point.weekday || 0;
+      document.getElementById("formWeekend").value = point.weekend || 0;
+      document.getElementById("formPlacement").value = point.placement || "";
+      document.getElementById("formCoop").value = point.coopStatus || "调研中";
+      document.getElementById("formDevice").value = point.deviceStatus || "未安装";
+      document.getElementById("formGrade").value = point.grade || "B";
+      document.getElementById("formNotes").value = point.notes || "";
+      if (point.lat && point.lng) setLatLngFields(point.lat, point.lng);
+    }
+
+    function setLocateMode(mode) {
+      locateMode = mode;
+      document.querySelectorAll("[data-locate-mode]").forEach((button) => button.classList.toggle("active", button.dataset.locateMode === mode));
+      candidateList.innerHTML = "";
+      pendingMapPick = false;
+      if (mode === "maps") {
+        document.getElementById("locateInputLabel").textContent = "Google Maps 链接 / 坐标";
+        locateInput.placeholder = "粘贴 Google Maps 链接或经纬度";
+        document.getElementById("locateActionBtn").textContent = "解析定位";
+        locateStatus.textContent = "支持含 @lat,lng、query=lat,lng 或直接 lat,lng 的链接。";
+      } else if (mode === "search") {
+        document.getElementById("locateInputLabel").textContent = "位置名称";
+        locateInput.placeholder = "例如 Monas Jakarta 或 Pantjoran PIK";
+        document.getElementById("locateActionBtn").textContent = "搜索候选";
+        locateStatus.textContent = "搜索后点击候选地址自动填入名称、地址和经纬度。";
+      } else {
+        document.getElementById("locateInputLabel").textContent = "地图点选";
+        locateInput.placeholder = "点击下方按钮后，在地图上选择位置";
+        document.getElementById("locateActionBtn").textContent = "开始地图点选";
+        locateStatus.textContent = "开始后关闭弹窗或在地图上点击目标位置。";
+      }
+    }
+
+    async function handleLocateAction() {
+      const value = locateInput.value.trim();
+      candidateList.innerHTML = "";
+      if (locateMode === "maps") {
+        const parsed = parseLatLng(value);
+        if (!parsed) {
+          locateStatus.textContent = "未识别到经纬度。请粘贴含坐标的 Google Maps 链接，或改用搜索/地图点选。";
+          return;
+        }
+        setLatLngFields(parsed.lat, parsed.lng);
+        if (!document.getElementById("formName").value && value.includes("place/")) {
+          document.getElementById("formName").value = decodeURIComponent(value.split("place/")[1].split("/")[0]).replaceAll("+", " ");
+        }
+        await reverseGeocode(parsed.lat, parsed.lng);
+      } else if (locateMode === "search") {
+        if (!value) {
+          locateStatus.textContent = "请输入位置名称。";
+          return;
+        }
+        locateStatus.textContent = "正在搜索候选地址...";
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&q=${encodeURIComponent(value + " Jakarta Indonesia")}`);
+          const results = await res.json();
+          candidateList.innerHTML = results.map((item, index) => `
+            <button class="candidate" type="button" data-index="${index}">
+              <b>${item.name || value}</b>
+              <span>${item.display_name}</span>
+            </button>
+          `).join("");
+          candidateList.querySelectorAll(".candidate").forEach((button) => {
+            button.addEventListener("click", () => {
+              const item = results[Number(button.dataset.index)];
+              const lat = Number(item.lat);
+              const lng = Number(item.lon);
+              document.getElementById("formName").value = item.name || value;
+              document.getElementById("formAddress").value = item.display_name || "";
+              setLatLngFields(lat, lng);
+              locateStatus.textContent = "已选择候选地址。";
+            });
+          });
+          locateStatus.textContent = results.length ? "请选择一个候选地址。" : "没有找到候选地址，请换关键词或地图点选。";
+        } catch {
+          locateStatus.textContent = "搜索失败，请稍后重试或使用地图点选。";
+        }
+      } else {
+        pendingMapPick = true;
+        pointModal.classList.remove("open");
+        locateStatus.textContent = "请在地图上点击目标位置。";
+      }
+    }
+
+    function readLatLngField() {
+      const parsed = parseLatLng(document.getElementById("formLatLng").value);
+      if (!parsed) throw new Error("请填写有效经纬度，例如 -6.1754, 106.8272");
+      return parsed;
+    }
+
+    function savePointFromForm(event) {
+      event.preventDefault();
+      let coords;
+      try {
+        coords = readLatLngField();
+      } catch (error) {
+        locateStatus.textContent = error.message;
+        return;
+      }
+      const id = document.getElementById("formId").value || `CUS-${Date.now().toString().slice(-7)}`;
+      const point = {
+        id,
+        name: document.getElementById("formName").value.trim(),
+        address: document.getElementById("formAddress").value.trim(),
+        mapsLink: document.getElementById("formMapsLink").value.trim() || `https://www.google.com/maps/search/?api=1&query=${coords.lat},${coords.lng}`,
+        lat: coords.lat,
+        lng: coords.lng,
+        type: document.getElementById("formType").value,
+        city: document.getElementById("formCity").value.trim(),
+        heat: document.getElementById("formHeat").value,
+        customers: document.getElementById("formCustomers").value.trim(),
+        weekday: Number(document.getElementById("formWeekday").value || 0),
+        weekend: Number(document.getElementById("formWeekend").value || 0),
+        placement: document.getElementById("formPlacement").value.trim(),
+        coopStatus: document.getElementById("formCoop").value,
+        deviceStatus: document.getElementById("formDevice").value,
+        grade: document.getElementById("formGrade").value,
+        notes: document.getElementById("formNotes").value.trim()
+      };
+      const existingIndex = customPoints.findIndex((item) => item.id === id);
+      if (existingIndex >= 0) customPoints[existingIndex] = point;
+      else customPoints.push(point);
+      saveCustomPoints();
+      rebuildCustomLayers();
+      closePointModal();
+      selectCustomPoint(point, true);
+    }
+
+    window.editCustomPoint = (id) => {
+      const point = customPoints.find((item) => item.id === id);
+      if (point) openPointModal(point);
+    };
+
+    window.relocateCustomPoint = (id) => {
+      const point = customPoints.find((item) => item.id === id);
+      if (!point) return;
+      openPointModal(point);
+      setLocateMode("click");
+    };
+
+    window.deleteCustomPoint = (id) => {
+      if (!confirm("确认删除这个自定义点位吗？")) return;
+      customPoints = customPoints.filter((item) => item.id !== id);
+      saveCustomPoints();
+      rebuildCustomLayers();
+      applyFilters();
+    };
+  </script>
+</body>
+</html>
